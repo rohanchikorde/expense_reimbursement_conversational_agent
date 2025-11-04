@@ -171,3 +171,6 @@ secrets.json
 # Receipts (if storing locally)
 receipts/
 uploads/
+
+# But allow test sample receipts
+!tests/sample_data/receipts/

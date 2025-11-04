@@ -52,3 +52,8 @@ def build_expense_workflow():
 
 # Create the application
 expense_agent_system = build_expense_workflow()
+
+print("=== WORKFLOW SYSTEM INITIALIZED ===")
+print("Available agents: supervisor, receipt_processor, location_analyst, classification, hitl, policy_engine, exception_handler, approval_router, finalize")
+print("Interrupt configured before: hitl")
+print("=== READY FOR EXPENSE PROCESSING ===\n")
