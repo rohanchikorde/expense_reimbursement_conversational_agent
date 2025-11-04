@@ -58,18 +58,738 @@ services:
 docker-compose up -d
 ```
 
-### ☁️ Cloud Deployment
+### ☸️ Kubernetes Deployment (Enterprise)
 
-#### **AWS EC2 Deployment**
+#### **Production Kubernetes Setup**
 
-1. **Launch EC2 instance**
+1. **Prerequisites**
    ```bash
-   # Ubuntu 20.04 LTS, t3.medium or higher
-   aws ec2 run-instances \
-     --image-id ami-0c55b159cbfafe1d0 \
-     --instance-type t3.medium \
-     --key-name your-key-pair
+   # Required tools
+   kubectl version --client
+   helm version
+   kustomize version
+
+   # Cluster requirements
+   # - Kubernetes 1.24+
+   # - 3+ nodes for HA
+   # - Storage class for persistent volumes
+   # - Ingress controller (NGINX/Ingress)
+   # - Cert-manager for TLS
    ```
+
+2. **Deploy with Helm**
+   ```bash
+   # Add helm repository
+   helm repo add expense-agent https://charts.expense-agent.com
+   helm repo update
+
+   # Create namespace
+   kubectl create namespace expense-agent
+
+   # Install with production values
+   helm install expense-agent expense-agent/expense-agent \
+     --namespace expense-agent \
+     --values production-values.yaml \
+     --create-namespace
+   ```
+
+3. **Production Helm Values**
+   ```yaml
+   # production-values.yaml
+   replicaCount: 3
+
+   image:
+     repository: expense-agent
+     tag: "v1.2.3"
+     pullPolicy: IfNotPresent
+
+   service:
+     type: ClusterIP
+     port: 8505
+
+   ingress:
+     enabled: true
+     className: nginx
+     annotations:
+       cert-manager.io/cluster-issuer: "letsencrypt-prod"
+       nginx.ingress.kubernetes.io/ssl-redirect: "true"
+       nginx.ingress.kubernetes.io/rate-limit: "100"
+       nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+     hosts:
+       - host: expenses.company.com
+         paths:
+           - path: /
+             pathType: Prefix
+     tls:
+       - secretName: expense-agent-tls
+         hosts:
+           - expenses.company.com
+
+   resources:
+     limits:
+       cpu: 1000m
+       memory: 2Gi
+     requests:
+       cpu: 500m
+       memory: 1Gi
+
+   autoscaling:
+     enabled: true
+     minReplicas: 3
+     maxReplicas: 10
+     targetCPUUtilizationPercentage: 70
+     targetMemoryUtilizationPercentage: 80
+
+   # Database configuration
+   database:
+     enabled: true
+     postgresql:
+       enabled: true
+       auth:
+         database: expense_agent
+         username: expense_user
+       architecture: replication
+       primary:
+         persistence:
+           enabled: true
+           size: 50Gi
+       readReplicas:
+         persistence:
+           enabled: true
+           size: 50Gi
+
+   # Redis for caching
+   redis:
+     enabled: true
+     architecture: replication
+     auth:
+       enabled: true
+     master:
+       persistence:
+         enabled: true
+         size: 10Gi
+
+   # Monitoring
+   prometheus:
+     enabled: true
+     serviceMonitor:
+       enabled: true
+
+   grafana:
+     enabled: true
+     adminPassword: "change-me-in-production"
+
+   # Security
+   podSecurityContext:
+     runAsNonRoot: true
+     runAsUser: 1001
+     fsGroup: 1001
+
+   securityContext:
+     allowPrivilegeEscalation: false
+     readOnlyRootFilesystem: true
+     runAsNonRoot: true
+     runAsUser: 1001
+     capabilities:
+       drop:
+         - ALL
+
+   # Secrets management
+   secrets:
+     openrouterApiKey: "openrouter-api-key-secret"
+     databaseUrl: "database-secret"
+     jwtSecret: "jwt-secret"
+
+   # Network policies
+   networkPolicy:
+     enabled: true
+     ingressRules:
+       - from:
+           - namespaceSelector:
+               matchLabels:
+                 name: ingress-nginx
+         ports:
+           - port: 8505
+   ```
+
+#### **Kubernetes Resources**
+```yaml
+# k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expense-agent
+  namespace: expense-agent
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: expense-agent
+  template:
+    metadata:
+      labels:
+        app: expense-agent
+    spec:
+      serviceAccountName: expense-agent-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+      - name: expense-agent
+        image: expense-agent:v1.2.3
+        ports:
+        - containerPort: 8505
+        env:
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: expense-agent-secrets
+              key: openrouter-api-key
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: expense-agent-secrets
+              key: database-url
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8505
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8505
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - expense-agent
+              topologyKey: kubernetes.io/hostname
+```
+
+### 🔗 Service Mesh Integration
+
+#### **Istio Service Mesh**
+```yaml
+# istio-config.yaml
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: expense-agent-gateway
+  namespace: expense-agent
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: expense-agent-tls
+    hosts:
+    - expenses.company.com
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: expense-agent
+  namespace: expense-agent
+spec:
+  hosts:
+  - expenses.company.com
+  gateways:
+  - expense-agent-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: expense-agent
+        port:
+          number: 8505
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+    corsPolicy:
+      allowOrigins:
+      - exact: https://app.company.com
+      allowMethods: ["GET", "POST", "PUT", "DELETE"]
+      allowHeaders: ["*"]
+      allowCredentials: true
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: expense-agent-auth
+  namespace: expense-agent
+spec:
+  selector:
+    matchLabels:
+      app: expense-agent
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        requestPrincipals: ["*"]
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/api/*"]
+```
+
+### 🏢 Enterprise Integration Patterns
+
+#### **API Gateway Integration**
+```yaml
+# Kong Gateway Configuration
+kong_config:
+  services:
+    - name: expense-agent
+      url: http://expense-agent.expense-agent.svc.cluster.local:8505
+      routes:
+        - name: expense-agent-route
+          paths:
+            - /api/expenses
+          methods: ["GET", "POST"]
+          strip_path: false
+
+  plugins:
+    - name: cors
+      service: expense-agent
+      config:
+        origins:
+          - https://app.company.com
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        headers: ["Authorization", "Content-Type"]
+        credentials: true
+
+    - name: rate-limiting
+      service: expense-agent
+      config:
+        minute: 100
+        hour: 1000
+        policy: local
+
+    - name: request-transformer
+      service: expense-agent
+      config:
+        add:
+          headers:
+            - "X-API-Key:$(req.header.apikey)"
+
+    - name: jwt
+      service: expense-agent
+      config:
+        secret_is_base64: false
+        run_on_preflight: true
+```
+
+#### **Enterprise Service Bus (ESB) Integration**
+```xml
+<!-- MuleSoft ESB Configuration -->
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:expense="http://www.company.com/schema/expense">
+
+    <http:listener-config name="HTTP_Listener_config"
+                         host="0.0.0.0" port="8081"/>
+
+    <flow name="expense-integration-flow">
+        <http:listener config-ref="HTTP_Listener_config"
+                      path="/expenses"/>
+
+        <expense:validate-expense-request/>
+
+        <http:request config-ref="ExpenseAgent_HTTP_Request_config"
+                     path="/api/expenses"
+                     method="POST">
+            <http:body>#[payload]</http:body>
+        </http:request>
+
+        <expense:transform-response/>
+
+        <logger level="INFO" message="Expense processed: #[payload.id]"/>
+    </flow>
+</mule>
+```
+
+### 🔐 Advanced Security Deployments
+
+#### **Zero-Trust Architecture**
+```yaml
+# OPA Gatekeeper Policies
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredLabels
+metadata:
+  name: expense-agent-required-labels
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces: ["expense-agent"]
+  parameters:
+    labels:
+      - key: security.scan/snyk
+        allowedValues: ["passed"]
+      - key: security.scan/trivy
+        allowedValues: ["passed"]
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPHostFilesystem
+metadata:
+  name: expense-agent-host-filesystem
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces: ["expense-agent"]
+  parameters:
+    allowedHostPaths:
+      - pathPrefix: "/tmp"
+        readOnly: false
+```
+
+#### **Secrets Management**
+```yaml
+# External Secrets Operator
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: expense-agent-secrets
+  namespace: expense-agent
+spec:
+  refreshInterval: 15s
+  secretStoreRef:
+    name: aws-secretsmanager
+    kind: SecretStore
+  target:
+    name: expense-agent-secrets
+    creationPolicy: Owner
+  data:
+  - secretKey: openrouter-api-key
+    remoteRef:
+      key: prod/expense-agent/openrouter-api-key
+  - secretKey: database-url
+    remoteRef:
+      key: prod/expense-agent/database-url
+  - secretKey: jwt-secret
+    remoteRef:
+      key: prod/expense-agent/jwt-secret
+```
+
+### 📊 Enterprise Monitoring Stack
+
+#### **Complete Observability Setup**
+```yaml
+# kube-prometheus-stack values
+monitoring:
+  prometheus:
+    enabled: true
+    serviceMonitorSelector: {}
+    ruleSelector: {}
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    prometheusSpec:
+      retention: 30d
+      retentionSize: "50GB"
+      resources:
+        limits:
+          cpu: 2000m
+          memory: 8Gi
+        requests:
+          cpu: 1000m
+          memory: 4Gi
+
+  grafana:
+    enabled: true
+    adminPassword: "change-me-in-production"
+    persistence:
+      enabled: true
+      size: 10Gi
+    dashboards:
+      expense-agent:
+        gnetId: 12345
+        revision: 1
+        datasource: Prometheus
+
+  alertmanager:
+    enabled: true
+    config:
+      global:
+        smtp_smarthost: 'smtp.company.com:587'
+        smtp_from: 'alerts@company.com'
+      route:
+        group_by: ['alertname']
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 1h
+        receiver: 'email'
+      receivers:
+      - name: 'email'
+        email_configs:
+        - to: 'engineering@company.com'
+```
+
+### 🚀 Blue-Green Deployment Strategy
+
+#### **Blue-Green Setup**
+```bash
+# Create blue environment
+kubectl create namespace expense-agent-blue
+helm install expense-agent-blue expense-agent/expense-agent \
+  --namespace expense-agent-blue \
+  --set image.tag=v1.2.3 \
+  --set ingress.enabled=false
+
+# Create green environment
+kubectl create namespace expense-agent-green
+helm install expense-agent-green expense-agent/expense-agent \
+  --namespace expense-agent-green \
+  --set image.tag=v1.2.4 \
+  --set ingress.enabled=false
+
+# Switch traffic to green
+kubectl patch ingress expense-agent-ingress \
+  --type='json' \
+  -p='[{"op": "replace", "path": "/spec/rules/0/http/paths/0/backend/service/name", "value": "expense-agent-green"}]'
+
+# Verify and cleanup
+kubectl delete namespace expense-agent-blue
+```
+
+### 🔄 CI/CD Pipeline (Enterprise)
+
+#### **GitOps with ArgoCD**
+```yaml
+# argocd-application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: expense-agent
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/company/expense-agent-deploy
+    targetRevision: HEAD
+    path: k8s/overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: expense-agent
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+```
+
+#### **Advanced CI/CD Pipeline**
+```yaml
+# .github/workflows/enterprise-deploy.yml
+name: Enterprise Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run tests
+      run: |
+        python -m pytest tests/ -v --cov=src --cov-report=xml
+    - name: Security scan
+      uses: snyk/actions/python@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Build and push
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        push: true
+        tags: expense-agent:${{ github.sha }}
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+    - name: Deploy to staging
+      uses: azure/k8s-deploy@v1
+      with:
+        namespace: expense-agent-staging
+        manifests: k8s/overlays/staging/
+        images: expense-agent:${{ github.sha }}
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+    - name: Manual approval
+      uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: engineering-manager,product-owner
+        minimum-approvals: 2
+        issue-title: "Deploy expense-agent to production"
+        issue-body: "Please approve or deny the deployment of expense-agent to production"
+
+    - name: Deploy to production
+      uses: azure/k8s-deploy@v1
+      with:
+        namespace: expense-agent
+        manifests: k8s/overlays/production/
+        images: expense-agent:${{ github.sha }}
+```
+
+---
+
+## 🏢 Enterprise Deployment Checklist
+
+### Pre-Deployment
+- [ ] Security review completed
+- [ ] Performance testing finished
+- [ ] Infrastructure capacity verified
+- [ ] Backup strategy implemented
+- [ ] Monitoring alerts configured
+- [ ] Rollback plan documented
+- [ ] Communication plan ready
+
+### Deployment Day
+- [ ] Pre-deployment backup taken
+- [ ] Monitoring dashboards verified
+- [ ] Team standup completed
+- [ ] Deployment window scheduled
+- [ ] Rollback procedures tested
+- [ ] Customer communication sent
+
+### Post-Deployment
+- [ ] Application health verified
+- [ ] Monitoring alerts checked
+- [ ] Performance benchmarks run
+- [ ] User acceptance testing
+- [ ] Documentation updated
+- [ ] Retrospective scheduled
+
+---
+
+## 📞 Enterprise Support
+
+### Production Support Model
+
+#### **Support Tiers**
+```yaml
+support_tiers:
+  tier_1:  # L1 Support (24/7)
+    response_time: 15min
+    resolution_time: 4h
+    coverage: 24x7x365
+    channels: [phone, email, chat]
+    responsibilities:
+      - Initial triage
+      - Basic troubleshooting
+      - Service restart
+      - Monitoring alerts
+
+  tier_2:  # L2 Support (Business Hours)
+    response_time: 30min
+    resolution_time: 8h
+    coverage: 8x5x5
+    channels: [email, ticket]
+    responsibilities:
+      - Advanced troubleshooting
+      - Code fixes
+      - Configuration changes
+      - Performance optimization
+
+  tier_3:  # L3 Support (Development Team)
+    response_time: 2h
+    resolution_time: 24h
+    coverage: 8x5x5
+    channels: [slack, ticket]
+    responsibilities:
+      - Root cause analysis
+      - Architecture changes
+      - New feature development
+      - Security patches
+```
+
+#### **Escalation Matrix**
+```yaml
+escalation_matrix:
+  severity_1:  # Critical - Service Down
+    response: immediate
+    notification: [oncall_engineer, engineering_manager, cto]
+    communication: [customers, executives]
+
+  severity_2:  # High - Major Feature Impact
+    response: 30min
+    notification: [oncall_engineer, engineering_manager]
+    communication: [product_team, customers]
+
+  severity_3:  # Medium - Minor Feature Impact
+    response: 2h
+    notification: [assigned_engineer, team_lead]
+    communication: [product_team]
+
+  severity_4:  # Low - Cosmetic Issues
+    response: 8h
+    notification: [assigned_engineer]
+    communication: []
+```
+
+---
+
+<div align="center">
+
+**🚀 Enterprise-grade deployment for mission-critical expense processing**
+
+[⬆️ Back to Top](#-deployment-guide) • [🏗️ Architecture](architecture.md) • [📊 Monitoring](monitoring.md) • [🏠 Home](../README.md)
+
+</div>
 
 2. **Configure security group**
    - Allow inbound traffic on port 8505

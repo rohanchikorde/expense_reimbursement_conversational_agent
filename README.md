@@ -11,7 +11,7 @@
 
 **🤖 An intelligent AI-powered system for automated expense reimbursement processing with human oversight**
 
-[🚀 Live Demo](#running) • [📖 Documentation](#documentation) • [🏗️ Architecture](docs/architecture.md) • [🔌 API Docs](docs/api.md) • [🚀 Deployment](docs/deployment.md) • [🧪 Testing](#testing) • [🤝 Contributing](#contributing)
+[🚀 Live Demo](#running) • [📖 Documentation](#documentation) • [� Architecture](docs/architecture.md) • [🔌 API Docs](docs/api.md) • [🚀 Deployment](docs/deployment.md) • [📊 Monitoring](docs/monitoring.md) • [🧪 Testing](#testing) • [🤝 Contributing](#contributing)
 
 </div>
 
@@ -173,10 +173,11 @@ expense_reimbursement_conversational_agent/
 
 | Document | Description | Link |
 |----------|-------------|------|
-| **🏗️ Architecture Guide** | Technical architecture, component analysis, data flows | [📋 docs/architecture.md](docs/architecture.md) |
+| **🏗️ Enterprise Architecture** | Production enterprise architecture, security, scalability | [🏢 docs/architecture.md](docs/architecture.md) |
 | **🔌 API Reference** | Complete API documentation with examples | [📖 docs/api.md](docs/api.md) |
-| **� Deployment Guide** | Docker, cloud, and local deployment options | [🚀 docs/deployment.md](docs/deployment.md) |
-| **�🔧 Troubleshooting** | Common issues, debugging, and solutions | [🛠️ docs/troubleshooting.md](docs/troubleshooting.md) |
+| **🚀 Enterprise Deployment** | Docker, Kubernetes, cloud, and enterprise deployments | [🚀 docs/deployment.md](docs/deployment.md) |
+| **📊 Enterprise Monitoring** | Complete monitoring, alerting, and observability | [📊 docs/monitoring.md](docs/monitoring.md) |
+| **🔧 Troubleshooting** | Common issues, debugging, and solutions | [🛠️ docs/troubleshooting.md](docs/troubleshooting.md) |
 | **🧪 Test Documentation** | Test scenarios, coverage, and validation | [🧪 tests/README.md](tests/README.md) |
 | **🤝 Contribution Guide** | Development workflow and standards | [🤝 CONTRIBUTING.md](CONTRIBUTING.md) |
 
@@ -280,6 +281,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 **Made with ❤️ for efficient expense processing**
 
-[⬆️ Back to Top](#-expense-reimbursement-conversational-agent) • [🏗️ Architecture](docs/architecture.md) • [🔌 API Docs](docs/api.md) • [� Deployment](docs/deployment.md) • [�🔧 Troubleshooting](docs/troubleshooting.md) • [🧪 Tests](tests/README.md)
+[⬆️ Back to Top](#-expense-reimbursement-conversational-agent) • [� Architecture](docs/architecture.md) • [🔌 API Docs](docs/api.md) • [🚀 Deployment](docs/deployment.md) • [� Monitoring](docs/monitoring.md) • [�🔧 Troubleshooting](docs/troubleshooting.md) • [🧪 Tests](tests/README.md)
 
 </div>
