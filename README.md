@@ -11,7 +11,7 @@
 
 **🤖 An intelligent AI-powered system for automated expense reimbursement processing with human oversight**
 
-[🚀 Live Demo](#running) • [📖 Documentation](#features) • [🧪 Testing](#testing) • [🤝 Contributing](#contributing)
+[🚀 Live Demo](#running) • [📖 Documentation](#documentation) • [🏗️ Architecture](docs/architecture.md) • [🔌 API Docs](docs/api.md) • [🚀 Deployment](docs/deployment.md) • [🧪 Testing](#testing) • [🤝 Contributing](#contributing)
 
 </div>
 
@@ -167,9 +167,25 @@ expense_reimbursement_conversational_agent/
 └── 📄 README.md                    # 📖 This file
 ```
 
----
+## 📚 Documentation
 
-## 🧪 Testing
+### 📖 Complete Documentation Suite
+
+| Document | Description | Link |
+|----------|-------------|------|
+| **🏗️ Architecture Guide** | Technical architecture, component analysis, data flows | [📋 docs/architecture.md](docs/architecture.md) |
+| **🔌 API Reference** | Complete API documentation with examples | [📖 docs/api.md](docs/api.md) |
+| **� Deployment Guide** | Docker, cloud, and local deployment options | [🚀 docs/deployment.md](docs/deployment.md) |
+| **�🔧 Troubleshooting** | Common issues, debugging, and solutions | [🛠️ docs/troubleshooting.md](docs/troubleshooting.md) |
+| **🧪 Test Documentation** | Test scenarios, coverage, and validation | [🧪 tests/README.md](tests/README.md) |
+| **🤝 Contribution Guide** | Development workflow and standards | [🤝 CONTRIBUTING.md](CONTRIBUTING.md) |
+
+### 🚀 Quick Links
+- **[📋 Architecture Overview](docs/architecture.md)** - Understand the system design
+- **[🔌 API Documentation](docs/api.md)** - Integration and usage examples  
+- **[🔧 Troubleshooting Guide](docs/troubleshooting.md)** - Solve common issues
+- **[🧪 Testing Guide](tests/README.md)** - Run and understand tests
+- **[🤝 Contributing](CONTRIBUTING.md)** - Join the development
 
 ### Automated Test Suite
 ```bash
@@ -264,6 +280,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 **Made with ❤️ for efficient expense processing**
 
-[⬆️ Back to Top](#-expense-reimbursement-conversational-agent)
+[⬆️ Back to Top](#-expense-reimbursement-conversational-agent) • [🏗️ Architecture](docs/architecture.md) • [🔌 API Docs](docs/api.md) • [� Deployment](docs/deployment.md) • [�🔧 Troubleshooting](docs/troubleshooting.md) • [🧪 Tests](tests/README.md)
 
 </div>
