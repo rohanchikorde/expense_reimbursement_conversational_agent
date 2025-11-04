@@ -1,0 +1,65 @@
+{
+  "test_cases": [
+    {
+      "name": "uber_business_trip",
+      "description": "Uber ride for business meeting",
+      "expected_department": "Sales",
+      "expected_purpose": "Client Meeting",
+      "expected_approval": "auto_approved",
+      "amount": 45.67,
+      "date": "2025-11-04",
+      "merchant": "Uber",
+      "pickup": "Downtown Office",
+      "dropoff": "Client Headquarters"
+    },
+    {
+      "name": "lyft_conference",
+      "description": "Lyft ride to industry conference",
+      "expected_department": "Marketing",
+      "expected_purpose": "Conference Attendance",
+      "expected_approval": "requires_approval",
+      "amount": 78.90,
+      "date": "2025-11-03",
+      "merchant": "Lyft",
+      "pickup": "Hotel",
+      "dropoff": "Convention Center"
+    },
+    {
+      "name": "taxi_training",
+      "description": "Taxi to training session",
+      "expected_department": "HR",
+      "expected_purpose": "Employee Training",
+      "expected_approval": "auto_approved",
+      "amount": 25.50,
+      "date": "2025-11-02",
+      "merchant": "City Taxi",
+      "pickup": "Office Building",
+      "dropoff": "Training Center"
+    },
+    {
+      "name": "uber_high_amount",
+      "description": "High-value Uber ride",
+      "expected_department": "Executive",
+      "expected_purpose": "Business Travel",
+      "expected_approval": "requires_approval",
+      "amount": 125.00,
+      "date": "2025-11-01",
+      "merchant": "Uber",
+      "pickup": "Airport",
+      "dropoff": "Hotel Downtown"
+    },
+    {
+      "name": "lyft_personal_use",
+      "description": "Lyft ride that appears personal",
+      "expected_department": "Unknown",
+      "expected_purpose": "Personal",
+      "expected_approval": "requires_approval",
+      "needs_clarification": true,
+      "amount": 35.75,
+      "date": "2025-10-31",
+      "merchant": "Lyft",
+      "pickup": "Shopping Mall",
+      "dropoff": "Residential Area"
+    }
+  ]
+}
