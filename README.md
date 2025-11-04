@@ -34,7 +34,34 @@ Upload a receipt image, and follow the conversation.
 
 ## Project Structure
 
-- `app.py`: Streamlit UI
-- `src/graph.py`: LangGraph definition and nodes
-- `requirements.txt`: Dependencies
-- `.env`: Environment variables (API key)
+```
+src/
+├── __init__.py
+├── agents/                 # Individual agent modules
+│   ├── __init__.py
+│   ├── supervisor.py       # Orchestrates workflow
+│   ├── receipt_processor.py # OCR and data extraction
+│   ├── location_analyst.py  # Country identification
+│   ├── classification.py    # Department/purpose classification
+│   ├── hitl.py             # Human-in-the-loop interactions
+│   ├── policy_engine.py    # Business rule application
+│   ├── exception_handler.py # Policy violations
+│   ├── approval_router.py  # Approval routing
+│   └── finalize.py         # Submission completion
+├── config/                 # Configuration settings
+│   ├── __init__.py
+│   └── settings.py         # API keys, thresholds, constants
+├── types/                  # Type definitions
+│   ├── __init__.py
+│   └── state.py            # ExpenseState schema
+├── utils/                  # Utility functions
+│   ├── __init__.py
+│   └── helpers.py          # Helper functions
+└── workflow.py             # Main workflow orchestration
+
+app.py                      # Streamlit UI
+requirements.txt            # Python dependencies
+.env                        # Environment variables (API keys)
+.gitignore                  # Git ignore rules
+README.md                   # This file
+```

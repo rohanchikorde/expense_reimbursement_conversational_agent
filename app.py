@@ -1,6 +1,7 @@
 import streamlit as st
 from PIL import Image
-from src.graph import expense_agent_system, ExpenseState
+from src.workflow import expense_agent_system
+from src.types.state import ExpenseState
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.types import Command
 import os
