@@ -19,7 +19,12 @@ This is a conversational AI agent built with LangGraph and Streamlit to handle U
    pip install -r requirements.txt
    ```
 
-2. Set OpenRouter API key in `.env`:
+2. **Tesseract OCR Setup** (configured and working):
+   - Tesseract OCR is installed and configured for Windows
+   - The system automatically uses Tesseract for accurate text extraction from receipt images
+   - Tested with sample receipts - OCR accuracy confirmed
+
+3. Set OpenRouter API key in `.env`:
    ```
    OPENROUTER_API_KEY=your-api-key
    ```
